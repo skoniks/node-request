@@ -1,0 +1,23 @@
+{
+  "name": "@sknx/request",
+  "version": "1.0.0",
+  "description": "Simple HTTP client",
+  "main": "dist/index.js",
+  "types": "types/index.d.ts",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc -b",
+    "pretest": "npm run build",
+    "test": "node dist/tests.js",
+    "prepublish": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skoniks/node-request"
+  },
+  "author": "skoniks",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^18.0.0"
+  }
+}
