@@ -1,8 +1,8 @@
 import { request } from '.';
 
 request({
-  url: 'https://google.com',
-  follow: 1,
-}).then(({ data }) => {
-  console.log(data);
+  url: 'https://ifconfig.me',
+}).then((response) => {
+  const { res, ...data } = response;
+  console.log(JSON.stringify(data));
 });

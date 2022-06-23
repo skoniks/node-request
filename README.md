@@ -40,3 +40,30 @@ The following options are available:
 - **timeout**: A number, that specifies request timeout in milliseconds
 - **body**: Object, Buffer, or string that will be sent to the server
 - **agent**: A custom agent to be used when performing requests
+
+Response Object contains:
+
+- **status**: HTTP status message
+- **statusCode**: HTTP status code
+- **headers**: Response headers Object
+- **data**: Response data in specified format
+- **res**: Raw HTTP response (`IncomingMessage`)
+
+Response example (without `res`):
+
+```json
+{
+  "status": "OK",
+  "statusCode": 200,
+  "headers": {
+    "access-control-allow-origin": "*",
+    "content-type": "text/plain; charset=utf-8",
+    "content-length": "13"
+  },
+  "data": "Hello, world!"
+}
+```
+
+# TODO
+
+- [ ] Handle response bad status codes (404, 500, etc)
