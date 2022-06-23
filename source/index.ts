@@ -141,10 +141,10 @@ function handleCallback(
 async function handleRequest(options: ReqOptions, context: ReqContext) {
   try {
     const url = parseReqUrl(options.url);
-    const method = options.method || 'GET';
     const { body, headers } = parseReqBody(options);
+    const { method = 'GET', timeout, agent } = options;
     const provider = getReqProvider(url.protocol || '');
-    const req = provider({ ...url, method, headers }, (res) =>
+    const req = provider({ ...url, method, headers, timeout, agent }, (res) =>
       handleCallback(res, options, context),
     );
     req.on('error', (error) => context.reject(error));
