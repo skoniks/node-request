@@ -66,4 +66,4 @@ Response example (without `res`):
 
 # TODO
 
-- [ ] Handle response bad status codes (404, 500, etc)
+- Handle response bad status codes (404, 500, etc)

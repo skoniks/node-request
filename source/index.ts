@@ -1,13 +1,8 @@
-import {
-  Agent as HttpAgent,
-  IncomingHttpHeaders,
-  IncomingMessage,
-  request as http,
-} from 'http';
-import { Agent as HttpsAgent, request as https } from 'https';
-import { urlToHttpOptions } from 'url';
+import http from 'http';
+import https from 'https';
+import url from 'url';
 
-type ReqMethod =
+type RequestMethod =
   | 'GET'
   | 'HEAD'
   | 'POST'
@@ -18,17 +13,14 @@ type ReqMethod =
   | 'TRACE'
   | 'PATCH';
 
-type ReqHeader = number | string | string[];
-interface ReqHeaders extends NodeJS.Dict<ReqHeader> {}
-
-type Agent = HttpAgent | HttpsAgent;
+type Agent = http.Agent | https.Agent;
 
 type ResFormat = 'string' | 'json' | 'buffer';
 
-interface ReqOptions {
+interface RequestOptions {
   url: string;
-  method?: ReqMethod;
-  headers?: ReqHeaders;
+  method?: RequestMethod;
+  headers?: http.OutgoingHttpHeaders;
   timeout?: number;
   follow?: number;
   format?: ResFormat;
@@ -36,38 +28,34 @@ interface ReqOptions {
   body?: any;
 }
 
-interface ReqContext {
-  resolve: (value: ReqResponse) => void;
+interface RequestContext {
+  resolve: (value: RequestResponse) => void;
   reject: (value: Error) => void;
   redirect?: number;
 }
 
-interface ReqResponse {
+interface RequestResponse {
   status?: string;
   statusCode?: number;
-  headers: IncomingHttpHeaders;
-  res: IncomingMessage;
+  headers: http.IncomingHttpHeaders;
+  res: http.IncomingMessage;
   data: any;
 }
 
 const redirectCodes = [301, 302, 303, 307, 308];
 
-function getReqProvider(protocol: string) {
+function getRequestProvider(protocol: string) {
   switch (protocol) {
     case 'http:':
-      return http;
+      return http.request;
     case 'https:':
-      return https;
+      return https.request;
     default:
       throw new Error(`Protocol "${protocol}" not supported.`);
   }
 }
 
-function parseReqUrl(url: string) {
-  return urlToHttpOptions(new URL(url));
-}
-
-function parseReqBody({ body, headers }: ReqOptions) {
+function parseRequestBody({ body, headers }: RequestOptions) {
   if (typeof body === 'object') {
     if (headers === undefined) {
       headers = { 'Content-Type': 'application/json' };
@@ -88,9 +76,9 @@ function parseReqBody({ body, headers }: ReqOptions) {
 }
 
 function handleCallback(
-  res: IncomingMessage,
-  options: ReqOptions,
-  context: ReqContext,
+  res: http.IncomingMessage,
+  options: RequestOptions,
+  context: RequestContext,
 ) {
   try {
     const { statusMessage: status, statusCode, headers } = res;
@@ -138,14 +126,15 @@ function handleCallback(
   }
 }
 
-async function handleRequest(options: ReqOptions, context: ReqContext) {
+async function handleRequest(options: RequestOptions, context: RequestContext) {
   try {
-    const url = parseReqUrl(options.url);
-    const { body, headers } = parseReqBody(options);
+    const reqUrl = url.parse(options.url);
+    const { body, headers } = parseRequestBody(options);
     const { method = 'GET', timeout, agent } = options;
-    const provider = getReqProvider(url.protocol || '');
-    const req = provider({ ...url, method, headers, timeout, agent }, (res) =>
-      handleCallback(res, options, context),
+    const provider = getRequestProvider(reqUrl.protocol || '');
+    const req = provider(
+      { ...reqUrl, method, headers, timeout, agent },
+      (res) => handleCallback(res, options, context),
     );
     req.on('error', (error) => context.reject(error));
     if (body) req.write(body);
@@ -155,12 +144,15 @@ async function handleRequest(options: ReqOptions, context: ReqContext) {
   }
 }
 
-async function request(options: ReqOptions) {
+async function request(options: RequestOptions) {
   return new Promise(
-    (resolve: (value: ReqResponse) => void, reject: (value: Error) => void) => {
+    (
+      resolve: (value: RequestResponse) => void,
+      reject: (value: Error) => void,
+    ) => {
       handleRequest(options, { resolve, reject });
     },
   );
 }
 
-export { request };
+export { request, RequestOptions, RequestResponse };

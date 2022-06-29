@@ -1,4 +1,6 @@
 /node_modules
 /source
 package-lock.json
+tsconfig.json
+README.md
 .DS_Store
