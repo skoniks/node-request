@@ -31,3 +31,11 @@ request({
     console.log(error.response?.statusCode);
   }
 });
+
+// Http Proxy request example
+request({
+  url: 'https://ifconfig.me',
+  proxy: 'http://user:pass@proxy:port',
+}).then(({ res, ...data }) => {
+  console.log(JSON.stringify(data));
+});

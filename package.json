@@ -1,6 +1,6 @@
 {
   "name": "@sknx/request",
-  "version": "1.0.4",
+  "version": "1.1.1",
   "description": "Simple HTTP client",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,7 +9,7 @@
     "build": "tsc -b",
     "pretest": "npm run build",
     "test": "node dist/test.js",
-    "prepublish": "npm run build"
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",

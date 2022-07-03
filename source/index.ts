@@ -21,6 +21,7 @@ type RequestValidate = (statusCode: number) => boolean;
 
 interface RequestOptions {
   url: string;
+  proxy?: string;
   method?: RequestMethod;
   headers?: http.OutgoingHttpHeaders;
   validate?: RequestValidate;
@@ -67,15 +68,27 @@ function getRequestProvider(protocol: string) {
     case 'https:':
       return https.request;
     default:
-      throw new Error(`Protocol "${protocol}" not supported.`);
+      const message = `Protocol ${protocol} not supported.`;
+      throw new Error(message);
+  }
+}
+
+function getDefaultPort(protocol: string) {
+  switch (protocol) {
+    case 'http:':
+      return '80';
+    case 'https:':
+      return '443';
+    default:
+      const message = `Protocol ${protocol} not supported.`;
+      throw new Error(message);
   }
 }
 
 function parseRequestBody({ body, headers }: RequestOptions) {
+  if (headers === undefined) headers = {};
   if (typeof body === 'object') {
-    if (headers === undefined) {
-      headers = { 'Content-Type': 'application/json' };
-    } else if (headers['Content-Type'] === undefined) {
+    if (headers['Content-Type'] === undefined) {
       headers['Content-Type'] = 'application/json';
     }
     switch (headers['Content-Type']) {
@@ -158,12 +171,33 @@ async function handleRequest(options: RequestOptions, context: RequestContext) {
     const reqUrl = url.parse(options.url);
     const { body, headers } = parseRequestBody(options);
     const { method = 'GET', timeout, agent } = options;
-    const provider = getRequestProvider(reqUrl.protocol || '');
-    const req = provider(
-      { ...reqUrl, method, headers, timeout, agent },
-      (res) => handleCallback(res, options, context),
-    );
+    let req: http.ClientRequest;
+    if (options.proxy) {
+      const proxyUrl = url.parse(options.proxy);
+      const provider = getRequestProvider(proxyUrl.protocol || '');
+      if (reqUrl.port === null)
+        reqUrl.port = getDefaultPort(proxyUrl.protocol || '');
+      headers['Host'] = `${reqUrl.hostname}:${reqUrl.port}`;
+      if (proxyUrl.auth !== null) {
+        const auth = Buffer.from(proxyUrl.auth).toString('base64');
+        headers['Proxy-Authorization'] = `Basic ${auth}`;
+        proxyUrl.auth = null;
+      }
+      req = provider({ ...proxyUrl, method, headers, timeout, agent }, (res) =>
+        handleCallback(res, options, context),
+      );
+    } else {
+      const provider = getRequestProvider(reqUrl.protocol || '');
+      req = provider({ ...reqUrl, method, headers, timeout, agent }, (res) =>
+        handleCallback(res, options, context),
+      );
+    }
     req.on('error', (error) => context.reject(error));
+    req.on('timeout', () => {
+      const message = `Timeout of ${timeout}ms exceeded`;
+      const error = new Error(message);
+      req.destroy(error);
+    });
     if (body) req.write(body);
     req.end();
   } catch (error) {

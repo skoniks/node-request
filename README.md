@@ -24,6 +24,9 @@ const response = await request({
 
   // Validate response statusCode
   validate: (status) => statusCode >= 200 && statusCode < 300,
+
+  // HTTP / HTTPS Proxy URL
+  proxy: 'http://user:pass@proxy:port',
 });
 
 console.log(response.data);
@@ -45,6 +48,7 @@ The following options are available:
 - **timeout**: A number, that specifies request timeout in milliseconds
 - **body**: Object, Buffer, or string that will be sent to the server
 - **agent**: A custom agent to be used when performing requests
+- **proxy**: A string with that represents HTTP / HTTPS Proxy URL
 
 Response Object contains:
 
@@ -96,6 +100,14 @@ request({
 });
 ```
 
-# TODO
+```js
+// Http Proxy request example
+request({
+  url: 'https://ifconfig.me',
+  proxy: 'http://user:pass@proxy:port',
+}).then(({ res, ...data }) => {
+  console.log(JSON.stringify(data));
+});
+```
 
-- Handle response bad status codes (404, 500, etc)
+# TODO
