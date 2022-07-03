@@ -17,10 +17,13 @@ type Agent = http.Agent | https.Agent;
 
 type ResFormat = 'string' | 'json' | 'buffer';
 
+type RequestValidate = (statusCode: number) => boolean;
+
 interface RequestOptions {
   url: string;
   method?: RequestMethod;
   headers?: http.OutgoingHttpHeaders;
+  validate?: RequestValidate;
   timeout?: number;
   follow?: number;
   format?: ResFormat;
@@ -40,6 +43,19 @@ interface RequestResponse {
   headers: http.IncomingHttpHeaders;
   res: http.IncomingMessage;
   data: any;
+}
+
+class RequestError extends Error {
+  public response?: RequestResponse;
+  constructor(message?: string, response?: RequestResponse) {
+    super(message);
+    this.response = response;
+    Object.setPrototypeOf(this, RequestError.prototype);
+  }
+}
+
+function isValidateError(error: unknown): error is RequestError {
+  return error instanceof RequestError;
 }
 
 const redirectCodes = [301, 302, 303, 307, 308];
@@ -103,19 +119,30 @@ function handleCallback(
       res.on('end', () => {
         try {
           let data: any;
+          const buffer = Buffer.concat(chunks);
           switch (options.format) {
             case 'buffer':
-              data = Buffer.concat(chunks);
+              data = buffer;
               break;
             case 'json':
-              data = JSON.parse(Buffer.concat(chunks).toString());
+              data = JSON.parse(buffer.toString());
               break;
             case 'string':
             default:
-              data = Buffer.concat(chunks).toString();
+              data = buffer.toString();
               break;
           }
-          context.resolve({ status, statusCode, headers, data, res });
+          if (!options.validate) {
+            options.validate = (statusCode) =>
+              statusCode >= 200 && statusCode < 300;
+          }
+          const response = { status, statusCode, headers, data, res };
+          if (options.validate(statusCode || 0)) {
+            context.resolve(response);
+          } else {
+            const error = new RequestError(status, response);
+            context.reject(error);
+          }
         } catch (error) {
           context.reject(<Error>error);
         }
@@ -155,4 +182,15 @@ async function request(options: RequestOptions) {
   );
 }
 
-export { request, RequestOptions, RequestResponse };
+class Request {
+  public defaults: Omit<RequestOptions, 'url' | 'method' | 'body'>;
+  constructor(options: Omit<RequestOptions, 'url' | 'method' | 'body'>) {
+    this.defaults = options;
+  }
+  request(options: RequestOptions) {
+    return request({ ...this.defaults, ...options });
+  }
+  static isValidateError = isValidateError;
+}
+
+export { request, isValidateError, Request, RequestOptions, RequestResponse };

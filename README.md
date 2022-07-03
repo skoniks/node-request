@@ -21,6 +21,9 @@ const response = await request({
 
   // Specify response format
   format: 'json',
+
+  // Validate response statusCode
+  validate: (status) => statusCode >= 200 && statusCode < 300,
 });
 
 console.log(response.data);
@@ -36,6 +39,8 @@ The following options are available:
 - **format**: Available formats are `'string'`, `'buffer'`, and
   `'json'`. By default, the response will be returned as `'string'`
 - **headers**: An object can be passed to set request headers.
+- **validate**: Function that defines whether to resolve or reject
+  the promise for a given HTTP response status code.
 - **follow**: A number, that specifies max redirects. If undefined - no redirects will be followed
 - **timeout**: A number, that specifies request timeout in milliseconds
 - **body**: Object, Buffer, or string that will be sent to the server
@@ -62,6 +67,33 @@ Response example (without `res`):
   },
   "data": "Hello, world!"
 }
+```
+
+# Examples
+
+```js
+// Instance request example
+const instance = new Request({
+  headers: { 'content-type': 'application/json' },
+});
+instance.defaults.timeout = 5000;
+instance.request({ url: 'https://ifconfig.me' }).then((response) => {
+  const { res, ...data } = response;
+  console.log(JSON.stringify(data));
+});
+```
+
+```js
+// StatusCode validation example
+request({
+  url: 'https://ifconfig.me',
+  validate: (status) => status === 400,
+}).catch((error) => {
+  // Check if validate statusCode error
+  if (Request.isValidateError(error)) {
+    console.log(error.response?.statusCode);
+  }
+});
 ```
 
 # TODO
