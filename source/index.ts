@@ -21,6 +21,7 @@ export type RequestValidate = (statusCode: number) => boolean;
 
 export interface RequestOptions {
   url: string;
+  baseUrl?: string;
   proxy?: string;
   method?: RequestMethod;
   headers?: http.OutgoingHttpHeaders;
@@ -168,7 +169,7 @@ function handleCallback(
 
 async function handleRequest(options: RequestOptions, context: RequestContext) {
   try {
-    const reqUrl = url.parse(options.url);
+    const reqUrl = url.parse((options.baseUrl || '') + options.url);
     const { body, headers } = parseRequestBody(options);
     const { method = 'GET', timeout, agent } = options;
     let req: http.ClientRequest;
