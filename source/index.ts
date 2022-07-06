@@ -2,7 +2,7 @@ import http from 'http';
 import https from 'https';
 import url from 'url';
 
-type RequestMethod =
+export type RequestMethod =
   | 'GET'
   | 'HEAD'
   | 'POST'
@@ -15,11 +15,11 @@ type RequestMethod =
 
 type Agent = http.Agent | https.Agent;
 
-type ResFormat = 'string' | 'json' | 'buffer';
+export type ResponseFormat = 'string' | 'json' | 'buffer';
 
-type RequestValidate = (statusCode: number) => boolean;
+export type RequestValidate = (statusCode: number) => boolean;
 
-interface RequestOptions {
+export interface RequestOptions {
   url: string;
   proxy?: string;
   method?: RequestMethod;
@@ -27,7 +27,7 @@ interface RequestOptions {
   validate?: RequestValidate;
   timeout?: number;
   follow?: number;
-  format?: ResFormat;
+  format?: ResponseFormat;
   agent?: Agent;
   body?: any;
 }
@@ -38,7 +38,7 @@ interface RequestContext {
   redirect?: number;
 }
 
-interface RequestResponse {
+export interface RequestResponse {
   status?: string;
   statusCode?: number;
   headers: http.IncomingHttpHeaders;
@@ -46,7 +46,7 @@ interface RequestResponse {
   data: any;
 }
 
-class RequestError extends Error {
+export class RequestError extends Error {
   public response?: RequestResponse;
   constructor(message?: string, response?: RequestResponse) {
     super(message);
@@ -55,7 +55,7 @@ class RequestError extends Error {
   }
 }
 
-function isValidateError(error: unknown): error is RequestError {
+export function isValidateError(error: unknown): error is RequestError {
   return error instanceof RequestError;
 }
 
@@ -205,7 +205,7 @@ async function handleRequest(options: RequestOptions, context: RequestContext) {
   }
 }
 
-async function request(options: RequestOptions) {
+export async function request(options: RequestOptions) {
   return new Promise(
     (
       resolve: (value: RequestResponse) => void,
@@ -216,7 +216,7 @@ async function request(options: RequestOptions) {
   );
 }
 
-class Request {
+export class Request {
   public defaults: Omit<RequestOptions, 'url' | 'method' | 'body'>;
   constructor(options: Omit<RequestOptions, 'url' | 'method' | 'body'>) {
     this.defaults = options;
@@ -226,5 +226,3 @@ class Request {
   }
   static isValidateError = isValidateError;
 }
-
-export { request, isValidateError, Request, RequestOptions, RequestResponse };
